@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# 用符号链接切换 Go 版本的脚本：执行 `switch_go <version>`，将 ~/go-current 指向对应 GOROOT。
+# 预置版本映射按本机实际路径填写，确保 PATH 里把 $HOME/go-current/bin 放在最前。
+
+set -euo pipefail
+
+# 版本号 -> GOROOT 路径映射，可按需扩展。
+declare -A GO_VERSIONS=(
+  [1.25.0]="/home/jws/goland/go"
+  [1.22.8]="/home/jws/sdk/go1.22.8"
+)
+
+usage() {
+  echo "用法: switch_go <version>"
+  echo "可用版本:"
+  for v in "${!GO_VERSIONS[@]}"; do
+    printf "  %s -> %s\n" "$v" "${GO_VERSIONS[$v]}"
+  done
+}
+
+main() {
+  if [[ $# -ne 1 ]]; then
+    usage
+    exit 1
+  fi
+
+  local version="$1"
+  local target="${GO_VERSIONS[$version]:-}"
+
+  if [[ -z "$target" ]]; then
+    echo "未知版本: $version"
+    usage
+    exit 1
+  fi
+
+  if [[ ! -x "$target/bin/go" ]]; then
+    echo "路径无效或缺少 go 可执行文件: $target"
+    exit 1
+  fi
+
+  local link="$HOME/go-current"
+
+  # ln -sfn 原子更新符号链接，避免残留旧指向。
+  ln -sfn "$target" "$link"
+
+  echo "已切换到 $version -> $target"
+
+  # 在当前进程里验证版本，父 shell 若 PATH 未指向 ~/go-current/bin，需手动调整。
+  GOROOT="$link" "$link/bin/go" version
+}
+
+main "$@"
