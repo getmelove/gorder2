@@ -1,0 +1,12 @@
+package config
+
+import "github.com/spf13/viper"
+
+func NewViperConfig() error {
+	viper.SetConfigName("global")
+	viper.SetConfigType("yaml")
+	// 这个是要在其他服务下面使用，所以路径是这样的
+	viper.AddConfigPath("../common/config")
+	viper.AutomaticEnv()
+	return viper.ReadInConfig()
+}

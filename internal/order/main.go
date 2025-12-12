@@ -1,19 +1,18 @@
 package main
 
 import (
-	"io"
 	"log"
-	"net/http"
+
+	"github.com/getmelove/gorder2/common/config"
+	"github.com/spf13/viper"
 )
 
-func main() {
-	log.Println("Listening on :8082")
-	mux := http.NewServeMux()
-	mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%v", r.RequestURI)
-		io.WriteString(w, "pong")
-	})
-	if err := http.ListenAndServe(":8082", mux); err != nil {
-		panic(err)
+func init() {
+	if err := config.NewViperConfig(); err != nil {
+		log.Fatalf("Error reading config file, %s", err)
 	}
+}
+
+func main() {
+	log.Printf("%v", viper.Get("order"))
 }
