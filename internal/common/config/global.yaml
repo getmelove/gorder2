@@ -1,5 +1,12 @@
+fallback-grpc-addr: 0.0.0.0:3030
 order:
   service-name: order
   server-to-run: http
-  http-addr: 127.0.0.1:8282
-  
+  http-addr: 0.0.0.0:8282
+  grpc-addr: 0.0.0.0:5002
+
+stock:
+  service-name: stock
+  server-to-run: grpc
+  http-addr: 0.0.0.0:8283
+  grpc-addr: 0.0.0.0:5003

@@ -3,10 +3,7 @@
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v3.21.12
 // source: orderpb/order.proto
-// gRPC 服务接口与客户端封装。包含：
-//   - OrderServiceClient 接口及 NewOrderServiceClient，用于客户端发起 RPC（CreateOrder/GetOrder/UpdateOrder）。
-//   - OrderServiceServer 接口和 RegisterOrderServiceServer，用于服务端实现并注册到 gRPC 服务器。
-//   - 每个方法的 handler、ServiceDesc 等元数据。
+
 package orderpb
 
 import (
