@@ -1,0 +1,35 @@
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*.DS_Store
+
+# Go build artifacts
+bin/
+*.exe
+*.test
+*.out
+**/bin
+
+# Generated code (uncomment if you want to keep generated proto out of git)
+# internal/common/genproto/
+
+# Temp & logs
+tmp/
+**/tmp/
+*.log
+
+# Local env / tooling
+.env
+.env.*
+
+
+# Coverage reports
+coverage.*
+*.coverprofile
+
+# Dependency cache (ignore if you don't vendor; remove if you do)
+vendor/
+
+.gobincache/

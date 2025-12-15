@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
 
-	"github.com/getmelove/gorder2/common/config"
-	"github.com/getmelove/gorder2/common/genproto/orderpb"
-	"github.com/getmelove/gorder2/common/server"
-	"github.com/getmelove/gorder2/order/ports"
+	"github.com/getmelove/gorder2/internal/common/config"
+	"github.com/getmelove/gorder2/internal/common/genproto/orderpb"
+	"github.com/getmelove/gorder2/internal/common/server"
+	"github.com/getmelove/gorder2/internal/order/ports"
+	"github.com/getmelove/gorder2/internal/order/service"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -27,13 +29,17 @@ func main() {
 	}
 	// serverType := viper.Sub("order").GetString("server-to-run")
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	application := service.NewApplication(ctx)
+
 	go server.RunGRPCServer(serviceName, func(server *grpc.Server) {
-		svc := ports.NewGRPCServer()
+		svc := ports.NewGRPCServer(application)
 		orderpb.RegisterOrderServiceServer(server, svc)
 	})
 
 	server.RunHttpServer(serviceName, func(router *gin.Engine) {
-		ports.RegisterHandlersWithOptions(router, ports.NewHTTPServer(), ports.GinServerOptions{
+		ports.RegisterHandlersWithOptions(router, ports.NewHTTPServer(application), ports.GinServerOptions{
 			BaseURL:      "/api",
 			Middlewares:  nil,
 			ErrorHandler: nil,

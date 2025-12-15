@@ -1,4 +1,4 @@
-module github.com/getmelove/gorder2/common
+module github.com/getmelove/gorder2/internal/common
 
 go 1.24.0
 

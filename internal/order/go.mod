@@ -1,14 +1,14 @@
-module github.com/getmelove/gorder2/order
+module github.com/getmelove/gorder2/internal/order
 
 go 1.24.0
 
 toolchain go1.24.11
 
 // source latest => target latest
-replace github.com/getmelove/gorder2/common => ../common
+replace github.com/getmelove/gorder2/internal/common => ../common
 
 require (
-	github.com/getmelove/gorder2/common v0.0.0-00010101000000-000000000000
+	github.com/getmelove/gorder2/internal/common v0.0.0-00010101000000-000000000000
 	github.com/gin-gonic/gin v1.11.0
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/spf13/viper v1.21.0
