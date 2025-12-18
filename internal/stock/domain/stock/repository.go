@@ -16,5 +16,5 @@ type NotFoundError struct {
 }
 
 func (e NotFoundError) Error() string {
-
+	return fmt.Sprintf("stock repository: could not find stock with ids: %v", e.Missing)
 }

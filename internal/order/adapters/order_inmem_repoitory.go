@@ -16,9 +16,19 @@ type OrderInMemRepoIt struct {
 }
 
 func NewOrderInMemRepoIt() *OrderInMemRepoIt {
+	// test Info
+	s := make([]*domain.Order, 0)
+	s = append(s, &domain.Order{
+		CustomerID:  "fake-customer-ID",
+		Id:          "fake-ID",
+		Items:       nil,
+		PaymentLink: "fake-payment-link",
+		Status:      "im-fake",
+	})
+	//
 	return &OrderInMemRepoIt{
 		lock:  &sync.RWMutex{},
-		store: make([]*domain.Order, 0),
+		store: s,
 	}
 }
 
@@ -45,7 +55,7 @@ func (o *OrderInMemRepoIt) Create(ctx context.Context, order *domain.Order) (*do
 func (o *OrderInMemRepoIt) Get(ctx context.Context, id, customerID string) (*domain.Order, error) {
 	o.lock.RLock()
 	defer o.lock.RUnlock()
-
+	logrus.Infof("o.store .%v", o.store)
 	for _, order := range o.store {
 		if order.Id == id && order.CustomerID == customerID {
 			logrus.Debugf("OrderInMemRepoIt.Get||found||id=%s||customerID=%s||res=%v", id, customerID, *o)
