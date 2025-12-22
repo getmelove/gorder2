@@ -23,7 +23,7 @@ func NewGetCustomerOrderHandler(orderRepo domain.Repository, logger *logrus.Entr
 	if orderRepo == nil {
 		panic("orderRepo is nil")
 	}
-	return decorator.ApplyQueryDecotators[GetCustomerOrder, *domain.Order](
+	return decorator.ApplyQueryDecorators[GetCustomerOrder, *domain.Order](
 		getCustomerOrderHandler{orderRepo: orderRepo},
 		logger,
 		metricsClient,

@@ -2,8 +2,11 @@ package ports
 
 import (
 	"log"
+	"net/http"
 
+	"github.com/getmelove/gorder2/internal/common/genproto/orderpb"
 	"github.com/getmelove/gorder2/internal/order/app"
+	"github.com/getmelove/gorder2/internal/order/app/command"
 	"github.com/getmelove/gorder2/internal/order/app/query"
 	"github.com/gin-gonic/gin"
 )
@@ -17,8 +20,24 @@ func NewHTTPServer(app app.Application) *HTTPServer {
 }
 
 func (H HTTPServer) PostCustomerCustomerIDOrders(c *gin.Context, customerID string) {
-	//TODO implement me
-	panic("implement me")
+	var req orderpb.CreateOrderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	r, err := H.app.Commands.CreateOrderHandler.Handle(c, command.CreateOrder{
+		CustomerId: req.CustomerID,
+		Items:      req.Items,
+	})
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message":     "success",
+		"customer_id": req.CustomerID,
+		"order_id":    r.OrderId,
+	})
 }
 
 func (H HTTPServer) GetCustomerCustomerIDOrdersOrderID(c *gin.Context, customerID string, orderID string) {
