@@ -5,6 +5,7 @@ import (
 
 	"github.com/getmelove/gorder2/internal/common/decorator"
 	"github.com/getmelove/gorder2/internal/common/genproto/orderpb"
+	"github.com/getmelove/gorder2/internal/order/app/query"
 	domain "github.com/getmelove/gorder2/internal/order/domain/order"
 	"github.com/sirupsen/logrus"
 )
@@ -26,15 +27,18 @@ type CreateOrderHandler decorator.CommandHandler[CreateOrder, *CreateOrderResult
 
 type createOrderHandler struct {
 	orderRepo domain.Repository
-	// stockGRPC
+	stockGRPC query.StockService
 }
 
-func NewCreateOrderHandler(orderRepo domain.Repository, logger *logrus.Entry, metricsClient decorator.MetricsClient) CreateOrderHandler {
+func NewCreateOrderHandler(orderRepo domain.Repository, stockGRPC query.StockService, logger *logrus.Entry, metricsClient decorator.MetricsClient) CreateOrderHandler {
 	if orderRepo == nil {
 		panic("orderRepo is nil")
 	}
+	if stockGRPC == nil {
+		panic("sotckgRPC is nil")
+	}
 	return decorator.ApplyCommandDecorators[CreateOrder, *CreateOrderResult](
-		createOrderHandler{orderRepo: orderRepo},
+		createOrderHandler{orderRepo: orderRepo, stockGRPC: stockGRPC},
 		logger,
 		metricsClient,
 	)
@@ -42,6 +46,10 @@ func NewCreateOrderHandler(orderRepo domain.Repository, logger *logrus.Entry, me
 
 func (c createOrderHandler) Handle(ctx context.Context, cmd CreateOrder) (*CreateOrderResult, error) {
 	// 1.创建订单前，需要判断库存是否足够
+	err := c.stockGRPC.CheckIfItemsInStock(ctx, cmd.Items)
+	resp, err := c.stockGRPC.GetItems(ctx, []string{"123"})
+	logrus.Info("fail to create conn to stock grpc", resp)
+
 	var stockResponse []*orderpb.Item
 	for _, item := range cmd.Items {
 		stockResponse = append(stockResponse, &orderpb.Item{
