@@ -48,7 +48,7 @@ func (o *OrderInMemRepoIt) Create(ctx context.Context, order *domain.Order) (*do
 	logrus.WithFields(logrus.Fields{
 		"input_order":        order,
 		"store_after_create": o.store,
-	}).Debug("memory_order_repo_create")
+	}).Info("memory_order_repo_create")
 	return newOrder, nil
 }
 
