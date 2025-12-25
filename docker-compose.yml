@@ -1,0 +1,12 @@
+services:
+  consul:
+    image: hashicorp/consul
+    command: agent -server -ui -node=server-1 -bootstrap-expect=1 -client=0.0.0.0
+    ports:
+      - 8500:8500
+      - 8600:8600/udp
+
+
+
+# docker compose logs -f consul 查看日志
+# docker compose ps 查看启动了那些服务

@@ -5,11 +5,13 @@ import (
 	"log"
 
 	"github.com/getmelove/gorder2/internal/common/config"
+	"github.com/getmelove/gorder2/internal/common/discovery"
 	"github.com/getmelove/gorder2/internal/common/genproto/orderpb"
 	"github.com/getmelove/gorder2/internal/common/server"
 	"github.com/getmelove/gorder2/internal/order/ports"
 	"github.com/getmelove/gorder2/internal/order/service"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
@@ -33,7 +35,16 @@ func main() {
 	defer cancel()
 	application, cleanup := service.NewApplication(ctx)
 	defer cleanup()
-
+	// 注册grpc服务
+	logrus.Info("start register to consul")
+	deregisterFunc, err := discovery.RegisterToConsul(ctx, serviceName)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	defer func() {
+		_ = deregisterFunc()
+	}()
+	logrus.Info("start register to consul end")
 	go server.RunGRPCServer(serviceName, func(server *grpc.Server) {
 		svc := ports.NewGRPCServer(application)
 		orderpb.RegisterOrderServiceServer(server, svc)

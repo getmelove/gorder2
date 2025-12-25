@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/getmelove/gorder2/internal/common/config"
+	"github.com/getmelove/gorder2/internal/common/discovery"
 	"github.com/getmelove/gorder2/internal/common/genproto/stockpb"
 	"github.com/getmelove/gorder2/internal/common/server"
 	"github.com/getmelove/gorder2/internal/stock/ports"
@@ -29,6 +30,16 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	application := service.NewApplication(ctx)
+	// 注册grpc服务
+	logrus.Info("start register to consul")
+	deregisterFunc, err := discovery.RegisterToConsul(ctx, serviceName)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	defer func() {
+		_ = deregisterFunc()
+	}()
+	logrus.Info("start register to consul end")
 	switch serverType {
 	case "grpc":
 		server.RunGRPCServer(serviceName, func(server *grpc.Server) {
