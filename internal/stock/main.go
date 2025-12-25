@@ -7,6 +7,7 @@ import (
 	"github.com/getmelove/gorder2/internal/common/config"
 	"github.com/getmelove/gorder2/internal/common/discovery"
 	"github.com/getmelove/gorder2/internal/common/genproto/stockpb"
+	"github.com/getmelove/gorder2/internal/common/logging"
 	"github.com/getmelove/gorder2/internal/common/server"
 	"github.com/getmelove/gorder2/internal/stock/ports"
 	"github.com/getmelove/gorder2/internal/stock/service"
@@ -16,6 +17,8 @@ import (
 )
 
 func init() {
+	// 初始化日志
+	logging.Init()
 	// 若没有读到服务配置则记录错误并退出
 	if err := config.NewViperConfig(); err != nil {
 		logrus.Fatalf("Error reading config file, %s", err)
