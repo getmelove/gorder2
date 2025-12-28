@@ -2,12 +2,15 @@ package command
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
+	"github.com/getmelove/gorder2/internal/common/broker"
 	"github.com/getmelove/gorder2/internal/common/decorator"
 	"github.com/getmelove/gorder2/internal/common/genproto/orderpb"
 	"github.com/getmelove/gorder2/internal/order/app/query"
 	domain "github.com/getmelove/gorder2/internal/order/domain/order"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,17 +32,21 @@ type CreateOrderHandler decorator.CommandHandler[CreateOrder, *CreateOrderResult
 type createOrderHandler struct {
 	orderRepo domain.Repository
 	stockGRPC query.StockService
+	channel   *amqp.Channel
 }
 
-func NewCreateOrderHandler(orderRepo domain.Repository, stockGRPC query.StockService, logger *logrus.Entry, metricsClient decorator.MetricsClient) CreateOrderHandler {
+func NewCreateOrderHandler(orderRepo domain.Repository, stockGRPC query.StockService, channel *amqp.Channel, logger *logrus.Entry, metricsClient decorator.MetricsClient) CreateOrderHandler {
 	if orderRepo == nil {
 		panic("orderRepo is nil")
 	}
 	if stockGRPC == nil {
 		panic("sotckgRPC is nil")
 	}
+	if channel == nil {
+		panic("Channel is nil")
+	}
 	return decorator.ApplyCommandDecorators[CreateOrder, *CreateOrderResult](
-		createOrderHandler{orderRepo: orderRepo, stockGRPC: stockGRPC},
+		createOrderHandler{orderRepo: orderRepo, stockGRPC: stockGRPC, channel: channel},
 		logger,
 		metricsClient,
 	)
@@ -76,6 +83,26 @@ func (c createOrderHandler) Handle(ctx context.Context, cmd CreateOrder) (*Creat
 		return &CreateOrderResult{
 			OrderId: o.Id,
 		}, err
+	}
+	// 创建好订单以后，转发给MQ
+	// 1.创建queue
+	q, err := c.channel.QueueDeclare(broker.EventOrderCreate, true, false, false, false, nil)
+	if err != nil {
+		return nil, err
+	}
+	marshalledOrder, err := json.Marshal(o)
+	if err != nil {
+		logrus.Error("marshall Order to queue error", err)
+		return nil, err
+	}
+	err = c.channel.PublishWithContext(ctx, "", q.Name, false, false, amqp.Publishing{
+		ContentType:  "application/json",
+		DeliveryMode: amqp.Persistent,
+		Body:         marshalledOrder,
+	})
+	if err != nil {
+		logrus.Error("publish Order to queue error", err)
+		return nil, err
 	}
 	return &CreateOrderResult{
 		OrderId: o.Id,

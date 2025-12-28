@@ -48,6 +48,7 @@ func main() {
 		_ = deregisterFunc()
 	}()
 	logrus.Info("start register to consul end")
+
 	go server.RunGRPCServer(serviceName, func(server *grpc.Server) {
 		svc := ports.NewGRPCServer(application)
 		orderpb.RegisterOrderServiceServer(server, svc)
