@@ -7,6 +7,7 @@ import (
 	"github.com/getmelove/gorder2/internal/common/config"
 	"github.com/getmelove/gorder2/internal/common/logging"
 	"github.com/getmelove/gorder2/internal/common/server"
+	"github.com/getmelove/gorder2/internal/payment/infrastructure/consumer"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -34,6 +35,9 @@ func main() {
 		_ = closeCh()
 		_ = ch.Close()
 	}()
+
+	// 起一个协程，在后台实现不停地消费queue中的消息
+	go consumer.NewConsumer().Listen(ch)
 
 	switch serverType {
 	case "http":
