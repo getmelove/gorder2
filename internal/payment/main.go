@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"github.com/getmelove/gorder2/internal/common/broker"
@@ -8,6 +9,7 @@ import (
 	"github.com/getmelove/gorder2/internal/common/logging"
 	"github.com/getmelove/gorder2/internal/common/server"
 	"github.com/getmelove/gorder2/internal/payment/infrastructure/consumer"
+	"github.com/getmelove/gorder2/internal/payment/service"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -22,8 +24,11 @@ func init() {
 }
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	serverType := viper.Sub("payment").GetString("server-to-run")
-	paymentHandler := NewPaymentHandler()
+	application, cleanup := service.NewApplication(ctx)
+	defer cleanup()
 	// 初始化消息队列
 	ch, closeCh := broker.Connect(
 		viper.Sub("rabbitmq").GetString("user"),
@@ -37,8 +42,8 @@ func main() {
 	}()
 
 	// 起一个协程，在后台实现不停地消费queue中的消息
-	go consumer.NewConsumer().Listen(ch)
-
+	go consumer.NewConsumer(application).Listen(ch)
+	paymentHandler := NewPaymentHandler()
 	switch serverType {
 	case "http":
 		server.RunHttpServer(viper.Sub("payment").GetString("service-name"), paymentHandler.RegisterRoutes)
