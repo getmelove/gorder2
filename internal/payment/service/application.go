@@ -9,6 +9,7 @@ import (
 	"github.com/getmelove/gorder2/internal/payment/domain"
 	"github.com/getmelove/gorder2/internal/payment/infrastructure/processor"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	"github.com/getmelove/gorder2/internal/payment/adapters"
 	"github.com/getmelove/gorder2/internal/payment/app"
@@ -21,9 +22,10 @@ func NewApplication(ctx context.Context) (app.Application, func()) {
 	if err != nil {
 		panic(err)
 	}
-	memoryProcessor := processor.NewInmemProcessor()
+	//memoryProcessor := processor.NewInmemProcessor()
+	stripeProcessor := processor.NewStripeProcessor(viper.GetString("stripe-key"))
 	orderGRPC := adapters.NewOrderGRPC(orderClient)
-	return newApplication(ctx, orderGRPC, memoryProcessor), func() {
+	return newApplication(ctx, orderGRPC, stripeProcessor), func() {
 		_ = closeOrderClient()
 	}
 }

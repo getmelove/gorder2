@@ -69,10 +69,13 @@ func (o *OrderInMemRepoIt) Update(ctx context.Context, order *domain.Order, upda
 	o.lock.Lock()
 	defer o.lock.Unlock()
 	found := false
+	defer func() {
+		logrus.Debugf("memory_order_repo||orderID=%s||found=%v", order.Id, found)
+	}()
 	for i, od := range o.store {
 		if od.Id == order.Id && od.CustomerID == order.CustomerID {
 			found = true
-			updateOrder, err := updateFn(ctx, od)
+			updateOrder, err := updateFn(ctx, order)
 			if err != nil {
 				return err
 			}

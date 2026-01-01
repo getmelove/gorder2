@@ -51,6 +51,7 @@ func (G GRPCServer) UpdateOrder(ctx context.Context, request *orderpb.Order) (*e
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+	logrus.Debugf("order_grpc || order=%+v", order)
 	// 这里就是更新逻辑
 	updateFn := func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
 		// 表示彻底更换一个order
