@@ -1,6 +1,7 @@
 package ports
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -34,9 +35,10 @@ func (H HTTPServer) PostCustomerCustomerIDOrders(c *gin.Context, customerID stri
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"message":     "success",
-		"customer_id": req.CustomerID,
-		"order_id":    r.OrderId,
+		"message":      "success",
+		"customer_id":  req.CustomerID,
+		"order_id":     r.OrderId,
+		"redirect_url": fmt.Sprintf("http://localhost:8282/success?cutomerID=%s&orderID=%s", req.CustomerID, r.OrderId),
 	})
 }
 
@@ -55,7 +57,9 @@ func (H HTTPServer) GetCustomerCustomerIDOrdersOrderID(c *gin.Context, customerI
 	} else {
 		c.JSON(200, gin.H{
 			"message": "sucsess",
-			"data":    o,
+			"data": gin.H{
+				"Order": o,
+			},
 		})
 	}
 }
