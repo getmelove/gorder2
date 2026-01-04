@@ -43,7 +43,7 @@ func main() {
 
 	// 起一个协程，在后台实现不停地消费queue中的消息
 	go consumer.NewConsumer(application).Listen(ch)
-	paymentHandler := NewPaymentHandler()
+	paymentHandler := NewPaymentHandler(ch)
 	switch serverType {
 	case "http":
 		server.RunHttpServer(viper.Sub("payment").GetString("service-name"), paymentHandler.RegisterRoutes)

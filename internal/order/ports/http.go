@@ -38,7 +38,7 @@ func (H HTTPServer) PostCustomerCustomerIDOrders(c *gin.Context, customerID stri
 		"message":      "success",
 		"customer_id":  req.CustomerID,
 		"order_id":     r.OrderId,
-		"redirect_url": fmt.Sprintf("http://localhost:8282/success?cutomerID=%s&orderID=%s", req.CustomerID, r.OrderId),
+		"redirect_url": fmt.Sprintf("http://10.11.71.154:8282/success?customerID=%s&orderID=%s", req.CustomerID, r.OrderId),
 	})
 }
 

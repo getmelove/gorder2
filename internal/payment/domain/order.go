@@ -1,4 +1,4 @@
-package order
+package domain
 
 import (
 	"errors"
@@ -33,7 +33,7 @@ func NewOrder(customerID string, id string, items []*orderpb.Item, paymentLink s
 		Id:          id,
 		Items:       items,
 		PaymentLink: paymentLink,
-		Status:      status,
+		Status:      "",
 	}, nil
 }
 
