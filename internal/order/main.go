@@ -4,11 +4,13 @@ import (
 	"context"
 	"log"
 
+	"github.com/getmelove/gorder2/internal/common/broker"
 	"github.com/getmelove/gorder2/internal/common/config"
 	"github.com/getmelove/gorder2/internal/common/discovery"
 	"github.com/getmelove/gorder2/internal/common/genproto/orderpb"
 	"github.com/getmelove/gorder2/internal/common/logging"
 	"github.com/getmelove/gorder2/internal/common/server"
+	"github.com/getmelove/gorder2/internal/order/infrastructure/consumer"
 	"github.com/getmelove/gorder2/internal/order/ports"
 	"github.com/getmelove/gorder2/internal/order/service"
 	"github.com/gin-gonic/gin"
@@ -36,6 +38,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	// 拿取service组装好的下层组件
 	application, cleanup := service.NewApplication(ctx)
 	defer cleanup()
 	// 注册grpc服务
@@ -48,6 +51,20 @@ func main() {
 		_ = deregisterFunc()
 	}()
 	logrus.Info("start register to consul end")
+
+	// 初始化消息队列
+	ch, closeCh := broker.Connect(
+		viper.Sub("rabbitmq").GetString("user"),
+		viper.Sub("rabbitmq").GetString("password"),
+		viper.Sub("rabbitmq").GetString("host"),
+		viper.Sub("rabbitmq").GetString("port"),
+	)
+	defer func() {
+		_ = closeCh()
+		_ = ch.Close()
+	}()
+	// 起一个协程消费paid事件
+	go consumer.NewConsumer(application).Listen(ch)
 
 	go server.RunGRPCServer(serviceName, func(server *grpc.Server) {
 		svc := ports.NewGRPCServer(application)

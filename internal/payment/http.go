@@ -51,12 +51,12 @@ func (h *PaymentHandler) handleWebhook(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-
+	logrus.Debugf("event: %s\n", event.Type)
 	switch event.Type {
 	case stripe.EventTypeCheckoutSessionCompleted:
 		var session stripe.CheckoutSession
 		if err := json.Unmarshal(event.Data.Raw, &session); err != nil {
-			logrus.Infof("error unmarshaling checkout session: %v\n", err)
+			logrus.Warnf("error unmarshaling checkout session: %v\n", err)
 			return
 		}
 		// 说明支付成功了
@@ -77,10 +77,9 @@ func (h *PaymentHandler) handleWebhook(c *gin.Context) {
 			})
 
 			if err != nil {
-				logrus.Infof("error marshalling domain.order: %v\n", err)
+				logrus.Warnf("error marshalling domain.order: %v\n", err)
 				return
 			}
-			return
 
 			_ = h.ch.PublishWithContext(ctx, broker.EventOrderPaid, "", false, false, amqp.Publishing{
 				ContentType:  "application/json",
@@ -90,7 +89,7 @@ func (h *PaymentHandler) handleWebhook(c *gin.Context) {
 			logrus.Infof("message published to %s, body: %s", broker.EventOrderPaid, string(marshalledOrder))
 		}
 	default:
-		logrus.Infof("unknown event type: %v", event.Type)
+		logrus.Warnf("unknown event type: %v", event.Type)
 	}
 
 	c.JSON(http.StatusOK, nil)
