@@ -35,13 +35,13 @@ func (c *Consumer) Listen(ch *amqp.Channel) {
 	var forever chan struct{}
 	go func() {
 		for msg := range msgs {
-			c.handleMessage(msg, q, ch)
+			c.handleMessage(msg, q)
 		}
 	}()
 	<-forever
 }
 
-func (c *Consumer) handleMessage(msg amqp.Delivery, q amqp.Queue, ch *amqp.Channel) {
+func (c *Consumer) handleMessage(msg amqp.Delivery, q amqp.Queue) {
 	logrus.Infof("Received payment message from queue=%s, msg=%s", q.Name, msg.Body)
 	o := &orderpb.Order{}
 	if err := json.Unmarshal(msg.Body, o); err != nil {

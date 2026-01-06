@@ -12,3 +12,14 @@ genproto:
 # 生成 OpenAPI 相关产物（如客户端或文档）
 genopenapi:
 	@./scripts/genopenapi.sh
+
+.PHONY: fmt
+fmt:
+	goimports -l -w internal/
+
+.PHONY: lint
+lint:
+	@./scripts/lint.sh
+
+
+

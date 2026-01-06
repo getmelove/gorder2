@@ -38,8 +38,8 @@ func NewOrderGRPCClient(ctx context.Context) (client orderpb.OrderServiceClient,
 	return orderpb.NewOrderServiceClient(conn), conn.Close, nil
 }
 
-func grpcDialOpts(addr string) ([]grpc.DialOption, error) {
+func grpcDialOpts(_ string) []grpc.DialOption {
 	return []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	}, nil
+	}
 }
