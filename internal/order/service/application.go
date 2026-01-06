@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/getmelove/gorder2/internal/common/broker"
-	grpcClient "github.com/getmelove/gorder2/internal/common/client/stock"
+	grpcClient "github.com/getmelove/gorder2/internal/common/client"
 	"github.com/getmelove/gorder2/internal/common/metrics"
 	"github.com/getmelove/gorder2/internal/order/adapters"
 	"github.com/getmelove/gorder2/internal/order/adapters/grpc"

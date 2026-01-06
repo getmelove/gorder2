@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	grpcClient "github.com/getmelove/gorder2/internal/common/client/order_grpc"
+	grpcClient "github.com/getmelove/gorder2/internal/common/client"
 	"github.com/getmelove/gorder2/internal/common/metrics"
 	"github.com/getmelove/gorder2/internal/payment/app/command"
 	"github.com/getmelove/gorder2/internal/payment/domain"
