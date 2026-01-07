@@ -21,3 +21,6 @@ source ~/.bashrc
 ## 查看环境变量
 echo $MY_VARIABLE
 ```
+```bash
+73079387295c4812c63b166294d66146
+```

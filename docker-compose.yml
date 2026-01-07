@@ -12,6 +12,17 @@ services:
       - "15672:15672"
       - "5672:5672"
 
-
+  jaeger:
+    image: "jaegertracing/all-in-one:latest"
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "16686:16686" # Jaeger Web UI
+#      - "5778:5778" # agent/config
+      - "4318:4318" # OTLP HTTP
+#      - "9411:9411" # Zipkin API
+      - "6831:6831" # UDP, Jaeger Thrift compact
+      - "14268:14268" # HTTP, jaeger.thrift spans
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
 # docker compose logs -f consul 查看日志
 # docker compose ps 查看启动了那些服务

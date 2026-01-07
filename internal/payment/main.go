@@ -8,6 +8,7 @@ import (
 	"github.com/getmelove/gorder2/internal/common/config"
 	"github.com/getmelove/gorder2/internal/common/logging"
 	"github.com/getmelove/gorder2/internal/common/server"
+	"github.com/getmelove/gorder2/internal/common/tracing"
 	"github.com/getmelove/gorder2/internal/payment/infrastructure/consumer"
 	"github.com/getmelove/gorder2/internal/payment/service"
 	"github.com/sirupsen/logrus"
@@ -24,9 +25,19 @@ func init() {
 }
 
 func main() {
+	serviceName := viper.Sub("payment").GetString("service-name")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	serverType := viper.Sub("payment").GetString("server-to-run")
+	// 使用jaeger
+	shutdown, err := tracing.InitJaegerProvider(viper.GetString("jaeger.url"), serviceName)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	defer func() {
+		_ = shutdown(ctx)
+	}()
+	//
 	application, cleanup := service.NewApplication(ctx)
 	defer cleanup()
 	// 初始化消息队列

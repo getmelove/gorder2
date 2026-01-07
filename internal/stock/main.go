@@ -9,6 +9,7 @@ import (
 	"github.com/getmelove/gorder2/internal/common/genproto/stockpb"
 	"github.com/getmelove/gorder2/internal/common/logging"
 	"github.com/getmelove/gorder2/internal/common/server"
+	"github.com/getmelove/gorder2/internal/common/tracing"
 	"github.com/getmelove/gorder2/internal/stock/ports"
 	"github.com/getmelove/gorder2/internal/stock/service"
 	"github.com/sirupsen/logrus"
@@ -33,6 +34,14 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	application := service.NewApplication(ctx)
+	// 使用jaeger
+	shutdown, err := tracing.InitJaegerProvider(viper.GetString("jaeger.url"), serviceName)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	defer func() {
+		_ = shutdown(ctx)
+	}()
 	// 注册grpc服务
 	logrus.Info("start register to consul")
 	deregisterFunc, err := discovery.RegisterToConsul(ctx, serviceName)

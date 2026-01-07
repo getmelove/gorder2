@@ -2,10 +2,10 @@ package ports
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/getmelove/gorder2/internal/common/genproto/orderpb"
+	"github.com/getmelove/gorder2/internal/common/tracing"
 	"github.com/getmelove/gorder2/internal/order/app"
 	"github.com/getmelove/gorder2/internal/order/app/command"
 	"github.com/getmelove/gorder2/internal/order/app/query"
@@ -21,12 +21,14 @@ func NewHTTPServer(app app.Application) *HTTPServer {
 }
 
 func (H HTTPServer) PostCustomerCustomerIDOrders(c *gin.Context, customerID string) {
+	ctx, span := tracing.Start(c, "PostCustomerCustomerIDOrders")
+	defer span.End()
 	var req orderpb.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	r, err := H.app.Commands.CreateOrderHandler.Handle(c, command.CreateOrder{
+	r, err := H.app.Commands.CreateOrderHandler.Handle(ctx, command.CreateOrder{
 		CustomerId: req.CustomerID,
 		Items:      req.Items,
 	})
@@ -34,8 +36,10 @@ func (H HTTPServer) PostCustomerCustomerIDOrders(c *gin.Context, customerID stri
 		c.JSON(http.StatusOK, gin.H{"error": err.Error()})
 		return
 	}
+	traceID := tracing.TraceID(ctx)
 	c.JSON(http.StatusOK, gin.H{
 		"message":      "success",
+		"trace_id":     traceID,
 		"customer_id":  req.CustomerID,
 		"order_id":     r.OrderId,
 		"redirect_url": fmt.Sprintf("http://10.11.71.154:8282/success?customerID=%s&orderID=%s", req.CustomerID, r.OrderId),
@@ -44,19 +48,21 @@ func (H HTTPServer) PostCustomerCustomerIDOrders(c *gin.Context, customerID stri
 
 func (H HTTPServer) GetCustomerCustomerIDOrdersOrderID(c *gin.Context, customerID string, orderID string) {
 	//
-	log.Println("HTTP Response GetCustomerCustomerIDOrdersOrderID")
-	//
-	o, err := H.app.Queries.GetCustomerOrderHandler.Handle(c, query.GetCustomerOrder{
+	ctx, span := tracing.Start(c, "GetCustomerCustomerIDOrdersOrderID")
+	defer span.End()
+	o, err := H.app.Queries.GetCustomerOrderHandler.Handle(ctx, query.GetCustomerOrder{
 		CustomerId: customerID,
 		OrderId:    orderID,
 	})
+	traceID := tracing.TraceID(ctx)
 	if err != nil {
 		c.JSON(200, gin.H{
 			"error": err,
 		})
 	} else {
 		c.JSON(200, gin.H{
-			"message": "sucsess",
+			"message":  "sucsess",
+			"trace_id": traceID,
 			"data": gin.H{
 				"Order": o,
 			},

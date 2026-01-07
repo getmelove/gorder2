@@ -10,6 +10,7 @@ import (
 	"github.com/getmelove/gorder2/internal/common/genproto/orderpb"
 	"github.com/getmelove/gorder2/internal/common/logging"
 	"github.com/getmelove/gorder2/internal/common/server"
+	"github.com/getmelove/gorder2/internal/common/tracing"
 	"github.com/getmelove/gorder2/internal/order/infrastructure/consumer"
 	"github.com/getmelove/gorder2/internal/order/ports"
 	"github.com/getmelove/gorder2/internal/order/service"
@@ -38,6 +39,14 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	// 使用jaeger
+	shutdown, err := tracing.InitJaegerProvider(viper.GetString("jaeger.url"), serviceName)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	defer func() {
+		_ = shutdown(ctx)
+	}()
 	// 拿取service组装好的下层组件
 	application, cleanup := service.NewApplication(ctx)
 	defer cleanup()

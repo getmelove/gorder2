@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func RunHttpServer(serviceName string, wrapper func(router *gin.Engine)) {
@@ -19,6 +20,9 @@ func RunHttpServer(serviceName string, wrapper func(router *gin.Engine)) {
 
 func RunHttpServerOnAddr(addr string, wrapper func(router *gin.Engine)) {
 	apiRouter := gin.New()
+	// 添加中间件
+	setMiddlewares(apiRouter)
+	//
 	wrapper(apiRouter)
 	apiRouter.Group("/api", func(c *gin.Context) {
 
@@ -32,4 +36,9 @@ func RunHttpServerOnAddr(addr string, wrapper func(router *gin.Engine)) {
 	if err := apiRouter.Run(addr); err != nil {
 		panic(err)
 	}
+}
+
+func setMiddlewares(r *gin.Engine) {
+	r.Use(gin.Recovery())
+	r.Use(otelgin.Middleware("default_server"))
 }
