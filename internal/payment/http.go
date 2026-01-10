@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stripe/stripe-go/v84"
 	"github.com/stripe/stripe-go/v84/webhook"
+	"go.opentelemetry.io/otel"
 )
 
 type PaymentHandler struct {
@@ -77,14 +79,19 @@ func (h *PaymentHandler) handleWebhook(c *gin.Context) {
 			})
 
 			if err != nil {
-				logrus.Warnf("error marshalling domain.order: %v\n", err)
+				logrus.Warnf("error marshalling domain.OrderAggregate: %v\n", err)
 				return
 			}
 
-			_ = h.ch.PublishWithContext(ctx, broker.EventOrderPaid, "", false, false, amqp.Publishing{
+			tracer := otel.Tracer("rabbitmq")
+			mqCtx, span := tracer.Start(ctx, fmt.Sprintf("rabbitmq.%s.publish", broker.EventOrderPaid))
+			defer span.End()
+			headers := broker.InjectRabbitMQHeaders(mqCtx)
+			_ = h.ch.PublishWithContext(mqCtx, broker.EventOrderPaid, "", false, false, amqp.Publishing{
 				ContentType:  "application/json",
 				DeliveryMode: amqp.Persistent,
 				Body:         marshalledOrder,
+				Headers:      headers,
 			})
 			logrus.Infof("message published to %s, body: %s", broker.EventOrderPaid, string(marshalledOrder))
 		}

@@ -7,6 +7,7 @@ import (
 	"github.com/getmelove/gorder2/internal/common/genproto/orderpb"
 	"github.com/getmelove/gorder2/internal/payment/domain"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 )
 
 type CreatePayment struct {
@@ -39,6 +40,12 @@ func NewCreatePaymentHandler(processor domain.Processor, orderGRPC OrderService,
 }
 
 func (c createPaymentCommand) Handle(ctx context.Context, cmd CreatePayment) (string, error) {
+	//
+	tracer := otel.Tracer("payment")
+	ctx, span := tracer.Start(ctx, "create_payment")
+	defer span.End()
+	//
+
 	link, err := c.processor.CreatePaymentLink(ctx, cmd.Order)
 	if err != nil {
 		return "", err

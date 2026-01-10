@@ -13,7 +13,7 @@ type GetCustomerOrder struct {
 	OrderId    string `json:"order_id"`
 }
 
-type GetCustomerOrderHandler decorator.QueryHandler[GetCustomerOrder, *domain.Order]
+type GetCustomerOrderHandler decorator.QueryHandler[GetCustomerOrder, *domain.OrderAggregate]
 
 type getCustomerOrderHandler struct {
 	orderRepo domain.Repository
@@ -23,7 +23,7 @@ func NewGetCustomerOrderHandler(orderRepo domain.Repository, logger *logrus.Entr
 	if orderRepo == nil {
 		panic("orderRepo is nil")
 	}
-	return decorator.ApplyQueryDecorators[GetCustomerOrder, *domain.Order](
+	return decorator.ApplyQueryDecorators[GetCustomerOrder, *domain.OrderAggregate](
 		getCustomerOrderHandler{orderRepo: orderRepo},
 		logger,
 		metricsClient,
@@ -31,7 +31,7 @@ func NewGetCustomerOrderHandler(orderRepo domain.Repository, logger *logrus.Entr
 }
 
 // 实现具体的查询
-func (g getCustomerOrderHandler) Handle(ctx context.Context, q GetCustomerOrder) (*domain.Order, error) {
+func (g getCustomerOrderHandler) Handle(ctx context.Context, q GetCustomerOrder) (*domain.OrderAggregate, error) {
 	o, err := g.orderRepo.Get(ctx, q.OrderId, q.CustomerId)
 	if err != nil {
 		return nil, err

@@ -3,10 +3,8 @@ package logging
 import (
 	"os"
 	"strconv"
-	"sync"
 
 	"github.com/sirupsen/logrus"
-	prefiex "github.com/x-cray/logrus-prefixed-formatter"
 )
 
 func Init() {
@@ -29,19 +27,18 @@ func SetFormatter(logger *logrus.Logger) {
 		PrettyPrint:      false,
 	})
 	if isLocal, _ := strconv.ParseBool(os.Getenv("LOCAL_ENV")); isLocal {
-		logger.SetFormatter(&prefiex.TextFormatter{
-			ForceColors:      false,
-			DisableColors:    false,
-			ForceFormatting:  true,
-			DisableTimestamp: false,
-			DisableUppercase: false,
-			FullTimestamp:    false,
-			TimestampFormat:  "",
-			DisableSorting:   false,
-			QuoteEmptyFields: false,
-			QuoteCharacter:   "",
-			SpacePadding:     0,
-			Once:             sync.Once{},
-		})
+		//logger.SetFormatter(&prefiex.TextFormatter{
+		//
+		//	ForceFormatting:  false,
+		//	DisableTimestamp: false,
+		//	DisableUppercase: false,
+		//	FullTimestamp:    false,
+		//	TimestampFormat:  "",
+		//	DisableSorting:   false,
+		//	QuoteEmptyFields: false,
+		//	QuoteCharacter:   "",
+		//	SpacePadding:     0,
+		//	Once:             sync.Once{},
+		//})
 	}
 }

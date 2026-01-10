@@ -3,6 +3,7 @@ package consumer
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/getmelove/gorder2/internal/common/broker"
 	"github.com/getmelove/gorder2/internal/order/app"
@@ -10,6 +11,7 @@ import (
 	domain "github.com/getmelove/gorder2/internal/order/domain/order"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 )
 
 type Consumer struct {
@@ -40,23 +42,29 @@ func (c *Consumer) Listen(ch *amqp.Channel) {
 	var forever chan struct{}
 	go func() {
 		for msg := range msgs {
-			c.handleMessage(msg)
+			c.handleMessage(msg, q)
 		}
 	}()
 	<-forever
 }
 
-func (c *Consumer) handleMessage(msg amqp.Delivery) {
-	o := &domain.Order{}
+func (c *Consumer) handleMessage(msg amqp.Delivery, q amqp.Queue) {
+	//
+	ctx := broker.ExtractRabbitMQHeaders(context.Background(), msg.Headers)
+	tracer := otel.Tracer("rabbitmq")
+	_, span := tracer.Start(ctx, fmt.Sprintf("rabbitmq.%s.consume", q.Name))
+	defer span.End()
+	//
+	o := &domain.OrderAggregate{}
 	if err := json.Unmarshal(msg.Body, o); err != nil {
 		logrus.Infof("error unmarshalling message : %v", err)
 		_ = msg.Nack(false, false)
 		return
 	}
 
-	_, err := c.app.Commands.UpdateOrderHandler.Handle(context.TODO(), command.UpdateOrder{
+	_, err := c.app.Commands.UpdateOrderHandler.Handle(ctx, command.UpdateOrder{
 		Order: o,
-		UpdateFn: func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
+		UpdateFn: func(ctx context.Context, order *domain.OrderAggregate) (*domain.OrderAggregate, error) {
 			if err := order.IsPaid(); err != nil {
 				return nil, err
 			}
@@ -68,6 +76,7 @@ func (c *Consumer) handleMessage(msg amqp.Delivery) {
 		// TODO: retry
 		return
 	}
+	span.AddEvent("order.updated")
 	_ = msg.Ack(false)
 	logrus.Infof("order %s consume paid event success!", o.Id)
 }

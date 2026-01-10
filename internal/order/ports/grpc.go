@@ -7,6 +7,7 @@ import (
 	"github.com/getmelove/gorder2/internal/order/app"
 	"github.com/getmelove/gorder2/internal/order/app/command"
 	"github.com/getmelove/gorder2/internal/order/app/query"
+	"github.com/getmelove/gorder2/internal/order/convertor"
 	domain "github.com/getmelove/gorder2/internal/order/domain/order"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -26,7 +27,7 @@ func NewGRPCServer(app app.Application) *GRPCServer {
 func (G GRPCServer) CreateOrder(ctx context.Context, request *orderpb.CreateOrderRequest) (*emptypb.Empty, error) {
 	_, err := G.app.Commands.CreateOrderHandler.Handle(ctx, command.CreateOrder{
 		CustomerId: request.CustomerID,
-		Items:      request.Items,
+		Items:      convertor.NewItemWithQuantityConvertor().ProtoToEntities(request.Items),
 	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -42,18 +43,24 @@ func (G GRPCServer) GetOrder(ctx context.Context, request *orderpb.GetOrderReque
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
-	return o.ToProto(), nil
+	return convertor.NewOrderConvertor().EntityToProto(*o), nil
 }
 
 func (G GRPCServer) UpdateOrder(ctx context.Context, request *orderpb.Order) (*emptypb.Empty, error) {
 	logrus.Infof("order_grpc || request_in || request=%+v", request)
-	order, err := domain.NewOrder(request.CustomerID, request.ID, request.Items, request.PaymentLink, request.Status)
+	order, err := domain.NewOrder(
+		request.CustomerID,
+		request.ID,
+		convertor.NewItemConvertor().ProtoToEntitys(request.Items),
+		request.PaymentLink,
+		request.Status,
+	)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	logrus.Debugf("order_grpc || order=%+v", order)
 	// 这里就是更新逻辑
-	updateFn := func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
+	updateFn := func(ctx context.Context, order *domain.OrderAggregate) (*domain.OrderAggregate, error) {
 		// 表示彻底更换一个order
 		return order, nil
 	}

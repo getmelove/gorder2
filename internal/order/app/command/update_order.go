@@ -12,8 +12,8 @@ import (
 type UpdateOrder struct {
 	// 更新订单需要的信息
 	// 客户的ID，以及订单的内容是什么，即客户下单了什么
-	Order    *domain.Order `json:"order"`
-	UpdateFn func(context.Context, *domain.Order) (*domain.Order, error)
+	Order    *domain.OrderAggregate `json:"order"`
+	UpdateFn func(context.Context, *domain.OrderAggregate) (*domain.OrderAggregate, error)
 }
 
 type UpdateOrderHandler decorator.CommandHandler[UpdateOrder, interface{}]
@@ -38,7 +38,7 @@ func (c updateOrderHandler) Handle(ctx context.Context, cmd UpdateOrder) (interf
 	// 进行兜底，没有实现UpdateFn的话就什么都不干
 	if cmd.UpdateFn == nil {
 		logrus.Warnf("UpdateOrder command is missing UpdateFn function, order=%#v", cmd.Order)
-		cmd.UpdateFn = func(_ context.Context, order *domain.Order) (*domain.Order, error) {
+		cmd.UpdateFn = func(_ context.Context, order *domain.OrderAggregate) (*domain.OrderAggregate, error) {
 			return order, nil
 		}
 	}

@@ -4,22 +4,25 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/getmelove/gorder2/internal/common/broker"
 	"github.com/getmelove/gorder2/internal/common/decorator"
-	"github.com/getmelove/gorder2/internal/common/genproto/orderpb"
 	"github.com/getmelove/gorder2/internal/order/app/query"
+	"github.com/getmelove/gorder2/internal/order/convertor"
 	domain "github.com/getmelove/gorder2/internal/order/domain/order"
+	"github.com/getmelove/gorder2/internal/order/entity"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 )
 
 // 1.定义一个cmd，也就是C。
 type CreateOrder struct {
 	// 创建订单需要的信息
 	// 客户的ID，已经订单的内容是什么，即客户下单了什么
-	CustomerId string                      `json:"customer_id"` // 客户ID
-	Items      []*orderpb.ItemWithQuantity `json:"items"`       // 客户下单的东西，前端传回来的是商品和数量
+	CustomerId string                    `json:"customer_id"` // 客户ID
+	Items      []entity.ItemWithQuantity `json:"items"`       // 客户下单的东西，前端传回来的是商品和数量
 }
 
 // 2. 定义R
@@ -53,26 +56,22 @@ func NewCreateOrderHandler(orderRepo domain.Repository, stockGRPC query.StockSer
 }
 
 func (c createOrderHandler) Handle(ctx context.Context, cmd CreateOrder) (*CreateOrderResult, error) {
-	// 1.创建订单前，需要判断库存是否足够
-	//err := c.stockGRPC.CheckIfItemsInStock(ctx, cmd.Items)
-	//resp, err := c.stockGRPC.GetItems(ctx, []string{"123"})
-	//logrus.Info("fail to create conn to stock grpc", resp)
-	//
-	//var stockResponse []*orderpb.Item
-	//for _, item := range cmd.Items {
-	//	stockResponse = append(stockResponse, &orderpb.Item{
-	//		ID:       item.ID,
-	//		Name:     "",
-	//		Quantity: item.Quantity,
-	//		PriceID:  "",
-	//	})
-	//}
-	// 先处理校验
+	// 创建好订单以后，转发给MQ
+	// 1.创建queue
+	q, err := c.channel.QueueDeclare(broker.EventOrderCreate, true, false, false, false, nil)
+	if err != nil {
+		return nil, err
+	}
+	// 创建span
+	t := otel.Tracer("rabbitmq")
+	ctx, span := t.Start(ctx, fmt.Sprintf("rabbitmq.%s.publish", q.Name))
+	defer span.End()
+	// 处理校验,查看仓储是否足够
 	validItems, err := c.validata(ctx, cmd.Items)
 	if err != nil {
 		return nil, err
 	}
-	o, err := c.orderRepo.Create(ctx, &domain.Order{
+	o, err := c.orderRepo.Create(ctx, &domain.OrderAggregate{
 		CustomerID:  cmd.CustomerId,
 		Id:          "",
 		Items:       validItems,
@@ -84,21 +83,18 @@ func (c createOrderHandler) Handle(ctx context.Context, cmd CreateOrder) (*Creat
 			OrderId: o.Id,
 		}, err
 	}
-	// 创建好订单以后，转发给MQ
-	// 1.创建queue
-	q, err := c.channel.QueueDeclare(broker.EventOrderCreate, true, false, false, false, nil)
-	if err != nil {
-		return nil, err
-	}
+	// 检查通过，发布到mq中
 	marshalledOrder, err := json.Marshal(o)
 	if err != nil {
 		logrus.Error("marshall Order to queue error", err)
 		return nil, err
 	}
+	header := broker.InjectRabbitMQHeaders(ctx)
 	err = c.channel.PublishWithContext(ctx, "", q.Name, false, false, amqp.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp.Persistent,
 		Body:         marshalledOrder,
+		Headers:      header,
 	})
 	if err != nil {
 		logrus.Error("publish Order to queue error", err)
@@ -110,35 +106,31 @@ func (c createOrderHandler) Handle(ctx context.Context, cmd CreateOrder) (*Creat
 }
 
 // 验证用户下单的东西，是否仓库中还有
-func (c createOrderHandler) validata(ctx context.Context, items []*orderpb.ItemWithQuantity) ([]*orderpb.Item, error) {
+func (c createOrderHandler) validata(ctx context.Context, items []entity.ItemWithQuantity) ([]*entity.Item, error) {
 	if len(items) == 0 {
 		return nil, errors.New("must have at least one item")
 	}
 	items = packItems(items)
-	resp, err := c.stockGRPC.CheckIfItemsInStock(ctx, items)
+	resp, err := c.stockGRPC.CheckIfItemsInStock(ctx, convertor.NewItemWithQuantityConvertor().EntityToProtos(items))
 	if err != nil {
 		return nil, err
 	}
-	return resp.GetItems(), nil
+	return convertor.NewItemConvertor().ProtoToEntitys(resp.GetItems()), nil
 }
 
 // 将用户下单的相同ID的商品合并起来
-func packItems(items []*orderpb.ItemWithQuantity) []*orderpb.ItemWithQuantity {
+func packItems(items []entity.ItemWithQuantity) []entity.ItemWithQuantity {
 	if len(items) == 0 {
 		return items
 	}
-	packed := make([]*orderpb.ItemWithQuantity, 0, len(items))
+	packed := make([]entity.ItemWithQuantity, 0, len(items))
 	indexByID := make(map[string]int, len(items))
 	for _, item := range items {
-		if item == nil {
-			continue
-		}
 		if idx, ok := indexByID[item.ID]; ok {
 			packed[idx].Quantity += item.Quantity
 			continue
 		}
-		clone := *item
-		packed = append(packed, &clone)
+		packed = append(packed, item)
 		indexByID[item.ID] = len(packed) - 1
 	}
 	return packed

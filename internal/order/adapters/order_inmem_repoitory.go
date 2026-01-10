@@ -12,13 +12,13 @@ import (
 
 type OrderInMemRepoIt struct {
 	lock  *sync.RWMutex
-	store []*domain.Order
+	store []*domain.OrderAggregate
 }
 
 func NewOrderInMemRepoIt() *OrderInMemRepoIt {
 	// test Info
-	s := make([]*domain.Order, 0)
-	s = append(s, &domain.Order{
+	s := make([]*domain.OrderAggregate, 0)
+	s = append(s, &domain.OrderAggregate{
 		CustomerID:  "fake-customer-ID",
 		Id:          "fake-ID",
 		Items:       nil,
@@ -32,12 +32,12 @@ func NewOrderInMemRepoIt() *OrderInMemRepoIt {
 	}
 }
 
-func (o *OrderInMemRepoIt) Create(ctx context.Context, order *domain.Order) (*domain.Order, error) {
+func (o *OrderInMemRepoIt) Create(ctx context.Context, order *domain.OrderAggregate) (*domain.OrderAggregate, error) {
 	// 创建订单，直接上锁
 	o.lock.Lock()
 	defer o.lock.Unlock()
 	// 创建订单
-	newOrder := &domain.Order{
+	newOrder := &domain.OrderAggregate{
 		CustomerID:  order.CustomerID,
 		Id:          strconv.FormatInt(time.Now().Unix(), 10),
 		Items:       order.Items,
@@ -52,7 +52,7 @@ func (o *OrderInMemRepoIt) Create(ctx context.Context, order *domain.Order) (*do
 	return newOrder, nil
 }
 
-func (o *OrderInMemRepoIt) Get(ctx context.Context, id, customerID string) (*domain.Order, error) {
+func (o *OrderInMemRepoIt) Get(ctx context.Context, id, customerID string) (*domain.OrderAggregate, error) {
 	o.lock.RLock()
 	defer o.lock.RUnlock()
 	logrus.Infof("o.store .%v", o.store)
@@ -65,7 +65,7 @@ func (o *OrderInMemRepoIt) Get(ctx context.Context, id, customerID string) (*dom
 	return nil, domain.NotFoundError{OrderID: id}
 }
 
-func (o *OrderInMemRepoIt) Update(ctx context.Context, order *domain.Order, updateFn func(context.Context, *domain.Order) (*domain.Order, error)) error {
+func (o *OrderInMemRepoIt) Update(ctx context.Context, order *domain.OrderAggregate, updateFn func(context.Context, *domain.OrderAggregate) (*domain.OrderAggregate, error)) error {
 	o.lock.Lock()
 	defer o.lock.Unlock()
 	found := false

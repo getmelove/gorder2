@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/getmelove/gorder2/internal/common/genproto/orderpb"
+	client "github.com/getmelove/gorder2/internal/common/client/order"
 	"github.com/getmelove/gorder2/internal/common/tracing"
 	"github.com/getmelove/gorder2/internal/order/app"
 	"github.com/getmelove/gorder2/internal/order/app/command"
 	"github.com/getmelove/gorder2/internal/order/app/query"
+	"github.com/getmelove/gorder2/internal/order/convertor"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,14 +24,15 @@ func NewHTTPServer(app app.Application) *HTTPServer {
 func (H HTTPServer) PostCustomerCustomerIDOrders(c *gin.Context, customerID string) {
 	ctx, span := tracing.Start(c, "PostCustomerCustomerIDOrders")
 	defer span.End()
-	var req orderpb.CreateOrderRequest
+	//var req orderpb.CreateOrderRequest
+	var req client.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	r, err := H.app.Commands.CreateOrderHandler.Handle(ctx, command.CreateOrder{
 		CustomerId: req.CustomerID,
-		Items:      req.Items,
+		Items:      convertor.NewItemWithQuantityConvertor().ClientToEntities(req.Items),
 	})
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"error": err.Error()})

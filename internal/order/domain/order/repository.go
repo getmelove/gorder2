@@ -6,12 +6,12 @@ import (
 )
 
 type Repository interface {
-	Create(context.Context, *Order) (*Order, error)
-	Get(ctx context.Context, id, customerID string) (*Order, error)
+	Create(context.Context, *OrderAggregate) (*OrderAggregate, error)
+	Get(ctx context.Context, id, customerID string) (*OrderAggregate, error)
 	Update(
 		ctx context.Context,
-		o *Order,
-		updateFn func(context.Context, *Order) (*Order, error),
+		o *OrderAggregate,
+		updateFn func(context.Context, *OrderAggregate) (*OrderAggregate, error),
 	) error
 }
 type NotFoundError struct {
