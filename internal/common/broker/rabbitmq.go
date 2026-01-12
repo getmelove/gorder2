@@ -73,6 +73,7 @@ func createDLX(ch *amqp.Channel) error {
 }
 
 func HandleRetry(ctx context.Context, ch *amqp.Channel, d *amqp.Delivery) error {
+	logrus.Infof("max-retry-count = %d", maxRetryCount)
 	if d.Headers == nil {
 		d.Headers = amqp.Table{}
 	}

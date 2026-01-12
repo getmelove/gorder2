@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/getmelove/gorder2/internal/common/broker"
-	"github.com/getmelove/gorder2/internal/common/config"
+	_ "github.com/getmelove/gorder2/internal/common/config"
 	"github.com/getmelove/gorder2/internal/common/discovery"
 	"github.com/getmelove/gorder2/internal/common/genproto/orderpb"
 	"github.com/getmelove/gorder2/internal/common/logging"
@@ -25,9 +25,9 @@ func init() {
 	// 初始化日志
 	logging.Init()
 	// 若没有读到服务配置则记录错误并退出
-	if err := config.NewViperConfig(); err != nil {
-		log.Fatalf("Error reading config file, %s", err)
-	}
+	// if err := config.NewViperConfig(); err != nil {
+	// 	log.Fatalf("Error reading config file, %s", err)
+	// }
 }
 
 func main() {
