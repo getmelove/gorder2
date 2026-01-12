@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"errors"
 
 	"github.com/getmelove/gorder2/internal/common/decorator"
 	"github.com/getmelove/gorder2/internal/common/genproto/orderpb"
@@ -40,6 +41,8 @@ func NewCreatePaymentHandler(processor domain.Processor, orderGRPC OrderService,
 }
 
 func (c createPaymentCommand) Handle(ctx context.Context, cmd CreatePayment) (string, error) {
+	// test DLQ
+	return "test-retry-link", errors.New("test retry")
 	//
 	tracer := otel.Tracer("payment")
 	ctx, span := tracer.Start(ctx, "create_payment")

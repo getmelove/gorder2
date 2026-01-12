@@ -10,26 +10,28 @@ consul:
 order:
   service-name: order
   server-to-run: http
-  http-addr: 10.11.71.154:8282
-  grpc-addr: 10.11.71.154:5002
+  http-addr: 10.11.69.39:8282
+  grpc-addr: 10.11.69.39:5002
 
 stock:
   service-name: stock
   server-to-run: grpc
-  http-addr: 10.11.71.154:8283
-  grpc-addr: 10.11.71.154:5003
+  http-addr: 10.11.69.39:8283
+  grpc-addr: 10.11.69.39:5003
 
 payment:
   service-name: payment
   server-to-run: http
-  http-addr: 10.11.71.154:8284
-  grpc-addr: 10.11.71.154:5004
+  http-addr: 10.11.69.39:8284
+  grpc-addr: 10.11.69.39:5004
 
 rabbitmq:
   user: guest
   password: guest
   host: 127.0.0.1
   port: 5672
+
+max-retry: 3
 
 stripe-key: "${STRIPE_KEY}"
 endpoint-stripe-secret: "${ENDPOINT_STRIPE_SECRET}"

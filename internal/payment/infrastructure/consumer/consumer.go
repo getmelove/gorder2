@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/getmelove/gorder2/internal/common/broker"
 	"github.com/getmelove/gorder2/internal/common/genproto/orderpb"
@@ -37,35 +38,48 @@ func (c *Consumer) Listen(ch *amqp.Channel) {
 	var forever chan struct{}
 	go func() {
 		for msg := range msgs {
-			c.handleMessage(msg, q)
+			c.handleMessage(ch, msg, q)
 		}
 	}()
 	<-forever
 }
 
-func (c *Consumer) handleMessage(msg amqp.Delivery, q amqp.Queue) {
+func (c *Consumer) handleMessage(ch *amqp.Channel, msg amqp.Delivery, q amqp.Queue) {
 	//
 	ctx := broker.ExtractRabbitMQHeaders(context.Background(), msg.Headers)
 	t := otel.Tracer("rabbitmq")
 	_, span := t.Start(ctx, fmt.Sprintf("rabbitmq.%s.consume", q.Name))
 	defer span.End()
+
+	var err error
+	defer func() {
+		if err != nil {
+			_ = msg.Nack(false, false)
+		} else {
+			_ = msg.Ack(false)
+		}
+	}()
 	//
 	logrus.Infof("Received payment message from queue=%s, msg=%s", q.Name, msg.Body)
 	o := &orderpb.Order{}
 	if err := json.Unmarshal(msg.Body, o); err != nil {
 		logrus.Infof("fail to unmarshal order, err=%+v", err)
-		_ = msg.Nack(false, false)
+		return
 	}
+	logrus.Info("Test retry, sleep for 5s, kill order now")
+	time.Sleep(5 * time.Second)
 	// 创建链接
-	if _, err := c.app.Commands.CreatePayment.Handle(ctx, command.CreatePayment{
+	if _, err = c.app.Commands.CreatePayment.Handle(ctx, command.CreatePayment{
+
 		Order: o,
 	}); err != nil {
 		// TODO: retry
 		logrus.Infof("fail to create payment, err=%+v", err)
-		_ = msg.Nack(false, false)
+		if err = broker.HandleRetry(ctx, ch, &msg); err != nil {
+			logrus.Warnf("retry_error, error handling retry, messageID = %s, err = %v", msg.MessageId, err)
+		}
 		return
 	}
 	span.AddEvent("payment.created")
-	_ = msg.Ack(false)
 	logrus.Info("consume success")
 }

@@ -42,13 +42,13 @@ func (c *Consumer) Listen(ch *amqp.Channel) {
 	var forever chan struct{}
 	go func() {
 		for msg := range msgs {
-			c.handleMessage(msg, q)
+			c.handleMessage(ch, msg, q)
 		}
 	}()
 	<-forever
 }
 
-func (c *Consumer) handleMessage(msg amqp.Delivery, q amqp.Queue) {
+func (c *Consumer) handleMessage(ch *amqp.Channel, msg amqp.Delivery, q amqp.Queue) {
 	//
 	ctx := broker.ExtractRabbitMQHeaders(context.Background(), msg.Headers)
 	tracer := otel.Tracer("rabbitmq")
@@ -62,7 +62,16 @@ func (c *Consumer) handleMessage(msg amqp.Delivery, q amqp.Queue) {
 		return
 	}
 
-	_, err := c.app.Commands.UpdateOrderHandler.Handle(ctx, command.UpdateOrder{
+	var err error
+	defer func() {
+		if err != nil {
+			_ = msg.Nack(false, false)
+		} else {
+			_ = msg.Ack(false)
+		}
+	}()
+
+	_, err = c.app.Commands.UpdateOrderHandler.Handle(ctx, command.UpdateOrder{
 		Order: o,
 		UpdateFn: func(ctx context.Context, order *domain.OrderAggregate) (*domain.OrderAggregate, error) {
 			if err := order.IsPaid(); err != nil {
@@ -74,9 +83,11 @@ func (c *Consumer) handleMessage(msg amqp.Delivery, q amqp.Queue) {
 	if err != nil {
 		logrus.Infof("error updating order, orderUD = %s, err = %v", o.Id, err)
 		// TODO: retry
+		if err = broker.HandleRetry(ctx, ch, &msg); err != nil {
+			logrus.Warnf("retry_error, error handling retry, messageID = %s, err = %v", msg.MessageId, err)
+		}
 		return
 	}
 	span.AddEvent("order.updated")
-	_ = msg.Ack(false)
 	logrus.Infof("order %s consume paid event success!", o.Id)
 }
