@@ -7,6 +7,7 @@ import (
 	"github.com/getmelove/gorder2/internal/stock/adapters"
 	"github.com/getmelove/gorder2/internal/stock/app"
 	"github.com/getmelove/gorder2/internal/stock/app/query"
+	"github.com/getmelove/gorder2/internal/stock/infrastructure/integration"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,11 +16,12 @@ func NewApplication(ctx context.Context) app.Application {
 	logger := logrus.NewEntry(logrus.StandardLogger())
 	metricsClient := metrics.NewTodoMetrics()
 	stockRepo := adapters.NewStockInMemRepoIt()
+	stripeAPI := integration.NewStripeAPI()
 	return app.Application{
 		Commands: app.Commands{},
 		Queries: app.Queries{
 			GetItemsHandler:            query.NewGetItemsHandler(stockRepo, logger, metricsClient),
-			CheckIfItemsInStockHandler: query.NewCheckIfItemsInStockHandler(stockRepo, logger, metricsClient),
+			CheckIfItemsInStockHandler: query.NewCheckIfItemsInStockHandler(stockRepo, logger, metricsClient, stripeAPI),
 		},
 	}
 }
