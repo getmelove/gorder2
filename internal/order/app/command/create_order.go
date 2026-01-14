@@ -71,13 +71,11 @@ func (c createOrderHandler) Handle(ctx context.Context, cmd CreateOrder) (*Creat
 	if err != nil {
 		return nil, err
 	}
-	o, err := c.orderRepo.Create(ctx, &domain.OrderAggregate{
-		CustomerID:  cmd.CustomerId,
-		Id:          "",
-		Items:       validItems,
-		PaymentLink: "",
-		Status:      "",
-	})
+	pendingOrder, err := domain.NewPendingOrder(cmd.CustomerId, validItems)
+	if err != nil {
+		return nil, err
+	}
+	o, err := c.orderRepo.Create(ctx, pendingOrder)
 	if err != nil {
 		return &CreateOrderResult{
 			OrderId: o.Id,

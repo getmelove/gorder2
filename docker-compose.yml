@@ -17,12 +17,34 @@ services:
     ports:
       - "4317:4317" # OTLP gRPC
       - "16686:16686" # Jaeger Web UI
-#      - "5778:5778" # agent/config
+      #      - "5778:5778" # agent/config
       - "4318:4318" # OTLP HTTP
-#      - "9411:9411" # Zipkin API
+      #      - "9411:9411" # Zipkin API
       - "6831:6831" # UDP, Jaeger Thrift compact
       - "14268:14268" # HTTP, jaeger.thrift spans
     environment:
       COLLECTOR_OTLP_ENABLED: true
-# docker compose logs -f consul 查看日志
-# docker compose ps 查看启动了那些服务
+
+  # docker compose logs -f consul 查看日志
+  # docker compose ps 查看启动了那些服务
+
+
+  order-mongo:
+    image: "mongo:7.0.8"
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+    ports:
+      - "27017:27017"
+
+  mongo-express:
+    image: "mongo-express"
+    restart: always
+    ports:
+      - "8082:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_URL: mongodb://root:password@order-mongo:27017/
+      ME_CONFIG_BASICAUTH: false

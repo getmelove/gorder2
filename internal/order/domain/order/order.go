@@ -46,3 +46,18 @@ func (o *OrderAggregate) IsPaid() error {
 	}
 	return fmt.Errorf("order %s is not paid, status = %s", o.Id, o.Status)
 }
+
+func NewPendingOrder(customerID string, items []*entity.Item) (*OrderAggregate, error) {
+	if customerID == "" {
+		return nil, errors.New("empty customerID")
+	}
+	if items == nil {
+		return nil, errors.New("empty items")
+	}
+	// 订单刚创建的时候可以没有paymentLink
+	return &OrderAggregate{
+		CustomerID: customerID,
+		Items:      items,
+		Status:     "pending",
+	}, nil
+}
