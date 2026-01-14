@@ -114,7 +114,7 @@ func (r *OrderRepositoryMongo) Update(
 	if err != nil {
 		return
 	}
-	updated, err := updateFn(ctx, oldOrder)
+	updated, err := updateFn(ctx, order)
 	if err != nil {
 		return
 	}
@@ -147,8 +147,8 @@ func (r *OrderRepositoryMongo) marshalToModel(order *domain.OrderAggregate) *ord
 
 func (r *OrderRepositoryMongo) unmarshal(m *orderModle) *domain.OrderAggregate {
 	return &domain.OrderAggregate{
-		CustomerID:  m.MongoID.Hex(),
-		Id:          m.ID,
+		CustomerID:  m.CustomerID,
+		Id:          m.MongoID.Hex(),
 		Items:       m.Items,
 		PaymentLink: m.PaymentLink,
 		Status:      m.Status,

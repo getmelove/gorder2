@@ -1,33 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Gorder</title>
 </head>
+
 <body>
-<section>
-    <p>
-        您已成功下单！
-    </p>
-    <p>
-        订单状态：<span id="orderStatus">等待中...</span>
-    </p>
-    <div class="ready-popup">
-        <p>您的订单正在处理中...</p>
-        <p style="color:burlywood; margin:12px">
-            订单号：<b><span id="orderID"></span></b>
+    <section>
+        <p>
+            您已成功下单！
         </p>
+        <p>
+            订单状态：<span id="orderStatus">等待中...</span>
+        </p>
+        <div class="ready-popup">
+            <p>您的订单正在处理中...</p>
+            <p style="color:burlywood; margin:12px">
+                订单号：<b><span id="orderID"></span></b>
+            </p>
 
-        <button class="close-btn" onclick="document.querySelector('.ready-popup').style.display = 'none'">
-            关闭
-        </button>
-    </div>
+            <button class="close-btn" onclick="document.querySelector('.ready-popup').style.display = 'none'">
+                关闭
+            </button>
+        </div>
 
-    <div class="after-payment-popup">
-        <p>等待支付中...</p>
-        <a id="payment-link" href="#">去支付</a>
-    </div>
-</section>
+        <div class="after-payment-popup">
+            <p>等待支付中...</p>
+            <a id="payment-link" href="#">去支付</a>
+        </div>
+    </section>
 </body>
 
 <style>
@@ -86,6 +88,7 @@
     .after-payment-popup p {
         margin: 0;
     }
+
     .after-payment-popup a {
         color: white;
         margin-top: 10px;
@@ -114,7 +117,7 @@
         orderID,
         status: 'pending'
     };
-    const getOrder = async() => {
+    const getOrder = async () => {
         const res = await fetch(`/api/customer/${customerID}/orders/${orderID}`);
         const data = await res.json();
         console.log("data = ", data)
@@ -130,7 +133,7 @@
          */
         const orderData = (data && data.data && data.data.Order) ? data.data.Order : {};
         const status = orderData.status || orderData.Status;
-        const paymentLink = orderData.paymentLink || orderData.PaymentLink;
+        const paymentLink = orderData.paymentLink || orderData.PaymentLink || orderData.payment_link;
 
         if (status === 'waiting_for_payment') {
             order.Status = '等待支付...';
@@ -154,4 +157,5 @@
     }
     getOrder();
 </script>
+
 </html>

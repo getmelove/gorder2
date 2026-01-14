@@ -31,6 +31,7 @@ func (h *PaymentHandler) RegisterRoutes(router *gin.Engine) {
 	router.POST("/api/webhook", h.handleWebhook)
 }
 
+// stripe listen --forward-to 10.11.69.39:8284/api/webhook
 func (h *PaymentHandler) handleWebhook(c *gin.Context) {
 	logrus.Info("got webhook from stripe")
 	const MaxBodyBytes = int64(65536)

@@ -47,16 +47,8 @@ func (H HTTPServer) PostCustomerCustomerIdOrders(c *gin.Context, customerID stri
 	resp = dto.CreateOrderResponse{
 		CustomerId:  req.CustomerId,
 		OrderId:     r.OrderId,
-		RedirectURL: fmt.Sprintf("http://10.11.71.154:8282/success?customerID=%s&orderID=%s", req.CustomerId, r.OrderId),
+		RedirectURL: fmt.Sprintf("http://10.11.69.39:8282/success?customerID=%s&orderID=%s", req.CustomerId, r.OrderId),
 	}
-	//traceID := tracing.TraceID(ctx)
-	//c.JSON(http.StatusOK, gin.H{
-	//	"message":      "success",
-	//	"trace_id":     traceID,
-	//	"customer_id":  req.CustomerId,
-	//	"order_id":     r.OrderId,
-	//	"redirect_url": fmt.Sprintf("http://10.11.71.154:8282/success?customerID=%s&orderID=%s", req.CustomerId, r.OrderId),
-	//})
 }
 
 func (H HTTPServer) GetCustomerCustomerIdOrdersOrderId(c *gin.Context, customerID string, orderID string) {

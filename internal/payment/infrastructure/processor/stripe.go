@@ -23,7 +23,7 @@ func NewStripeProcessor(apiKey string) *StripeProcessor {
 }
 
 var (
-	successURL = "http://10.11.71.154:8282/success"
+	successURL = "http://10.11.69.39:8282/success"
 )
 
 func (s StripeProcessor) CreatePaymentLink(ctx context.Context, order *orderpb.Order) (string, error) {

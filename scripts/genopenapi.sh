@@ -52,14 +52,11 @@ function gen() {
   # 准备客户端输出目录（工具函数在 lib.sh 中定义）
   prepare_dir "internal/common/client/$service"
 
-  # 生成仅包含类型定义的代码（服务端包）
-  run oapi-codegen -generate types -o "$output_dir/openapi_types.gen.go" -package "$package" "api/openapi/$service.yml"
-  # 生成 server 框架代码（根据选择的 gin-server）
-  run oapi-codegen -generate "$GEN_SERVER" -o "$output_dir/openapi_api.gen.go" -package "$package" "api/openapi/$service.yml"
+   run oapi-codegen -config api/openapi/cfg.yml -generate types -o "$output_dir/openapi_types.gen.go" -package "$package" "api/openapi/$service.yml"
+   run oapi-codegen -config api/openapi/cfg.yml -generate "$GEN_SERVER" -o "$output_dir/openapi_api.gen.go" -package "$package" "api/openapi/$service.yml"
 
-  # 生成客户端调用代码（client + types），放在 client 目录
-  run oapi-codegen -generate client -o "internal/common/client/$service/openapi_client.gen.go" -package "$service" "api/openapi/$service.yml"
-  run oapi-codegen -generate types -o "internal/common/client/$service/openapi_types.gen.go" -package "$service" "api/openapi/$service.yml"
+   run oapi-codegen -config api/openapi/cfg.yml -generate client -o "internal/common/client/$service/openapi_client.gen.go" -package "$service" "api/openapi/$service.yml"
+   run oapi-codegen -config api/openapi/cfg.yml -generate types -o "internal/common/client/$service/openapi_types.gen.go" -package "$service" "api/openapi/$service.yml"
 }
 
 gen internal/order/ports ports order

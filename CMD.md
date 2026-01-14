@@ -8,7 +8,7 @@
 
 ```bash
 # stripe客户端 监听 payment端口
- stripe listen --forward-to 10.11.71.154:8284/api/webhook
+ stripe listen --forward-to 10.11.69.39:8284/api/webhook
 ```
 
 ```bash
