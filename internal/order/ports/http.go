@@ -1,6 +1,7 @@
 package ports
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/getmelove/gorder2/internal/common"
@@ -69,4 +70,13 @@ func (H HTTPServer) GetCustomerCustomerIdOrdersOrderId(c *gin.Context, customerI
 		OrderId:    orderID,
 	})
 	resp.Order = convertor.NewOrderConvertor().EntityToClient(o)
+}
+
+func (H HTTPServer) validate(req client.CreateOrderRequest) error {
+	for _, v := range req.Items {
+		if v.Quantity <= 0 {
+			return errors.New("quantity must be positive")
+		}
+	}
+	return nil
 }

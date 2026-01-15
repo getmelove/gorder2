@@ -4,16 +4,16 @@ import (
 	"context"
 	"sync"
 
-	"github.com/getmelove/gorder2/internal/common/genproto/orderpb"
 	domain "github.com/getmelove/gorder2/internal/stock/domain/stock"
+	"github.com/getmelove/gorder2/internal/stock/entity"
 )
 
 type StockInMemRepoIt struct {
 	lock  *sync.RWMutex
-	store map[string]*orderpb.Item
+	store map[string]*entity.Item
 }
 
-var stub = map[string]*orderpb.Item{
+var stub = map[string]*entity.Item{
 	"item_id": {
 		ID:       "foo_item",
 		Name:     "stub item",
@@ -41,10 +41,10 @@ func NewStockInMemRepoIt() *StockInMemRepoIt {
 	}
 }
 
-func (s StockInMemRepoIt) GetItems(ctx context.Context, ids []string) ([]*orderpb.Item, error) {
+func (s StockInMemRepoIt) GetItems(ctx context.Context, ids []string) ([]*entity.Item, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	res, missId := make([]*orderpb.Item, 0), make([]string, 0)
+	res, missId := make([]*entity.Item, 0), make([]string, 0)
 	for _, id := range ids {
 		if item, exist := s.store[id]; exist {
 			res = append(res, item)
@@ -55,5 +55,5 @@ func (s StockInMemRepoIt) GetItems(ctx context.Context, ids []string) ([]*orderp
 	if len(res) == len(ids) {
 		return res, nil
 	}
-	return res, domain.NotFoundError{missId}
+	return res, domain.NotFoundError{Missing: missId}
 }

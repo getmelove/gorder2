@@ -1,0 +1,13 @@
+CREATE DATABASE IF NOT EXISTS gorder;
+USE gorder;
+
+CREATE TABLE IF NOT EXISTS o_stock (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_id VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT INTO o_stock (product_id, quantity) VALUES ('prod_ThjsHE5qzUNVYT', 10000);
+INSERT INTO o_stock (product_id, quantity) VALUES ('prod_TiCZTq9XoPLJ8V', 10000);

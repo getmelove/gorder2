@@ -6,6 +6,7 @@ import (
 	"github.com/getmelove/gorder2/internal/common/genproto/stockpb"
 	"github.com/getmelove/gorder2/internal/stock/app"
 	"github.com/getmelove/gorder2/internal/stock/app/query"
+	"github.com/getmelove/gorder2/internal/stock/convertor"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,12 +26,12 @@ func (G GRPCServer) GetItems(ctx context.Context, request *stockpb.GetItemsReque
 		logrus.Warnf("GetItems: %v", err)
 		return nil, err
 	}
-	return &stockpb.GetItemsResponse{Items: items}, nil
+	return &stockpb.GetItemsResponse{Items: convertor.NewItemConvertor().ToProtos(items)}, nil
 }
 
 func (G GRPCServer) CheckIfItemsInStock(ctx context.Context, request *stockpb.CheckIfItemsInStockRequest) (*stockpb.CheckIfItemsInStockResponse, error) {
 	items, err := G.app.Queries.CheckIfItemsInStockHandler.Handle(ctx, query.CheckIfItemsInStock{
-		ItemsWithQuantity: request.Items,
+		ItemsWithQuantity: convertor.NewItemConvertor().ProtoToEntities(request.Items),
 	})
 	if err != nil {
 		logrus.Warnf("CheckIfItemsInStock: %v", err)
@@ -38,6 +39,6 @@ func (G GRPCServer) CheckIfItemsInStock(ctx context.Context, request *stockpb.Ch
 	}
 	return &stockpb.CheckIfItemsInStockResponse{
 		InStock: 1,
-		Items:   items,
+		Items:   convertor.NewItemConvertor().ToProtos(items),
 	}, nil
 }

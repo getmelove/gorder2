@@ -8,6 +8,7 @@ import (
 	"github.com/getmelove/gorder2/internal/stock/app"
 	"github.com/getmelove/gorder2/internal/stock/app/query"
 	"github.com/getmelove/gorder2/internal/stock/infrastructure/integration"
+	"github.com/getmelove/gorder2/internal/stock/infrastructure/persistent"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,7 +16,8 @@ import (
 func NewApplication(ctx context.Context) app.Application {
 	logger := logrus.NewEntry(logrus.StandardLogger())
 	metricsClient := metrics.NewTodoMetrics()
-	stockRepo := adapters.NewStockInMemRepoIt()
+	db := persistent.NewMySQL()
+	stockRepo := adapters.NewMySQLStockRepository(db)
 	stripeAPI := integration.NewStripeAPI()
 	return app.Application{
 		Commands: app.Commands{},
