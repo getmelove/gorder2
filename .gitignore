@@ -33,3 +33,6 @@ coverage.*
 vendor/
 
 .gobincache/
+
+# Data files
+mysql_data/
