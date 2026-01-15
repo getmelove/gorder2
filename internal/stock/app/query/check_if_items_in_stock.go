@@ -55,7 +55,6 @@ func (c checkIfItemsInStockHandler) Handle(ctx context.Context, q CheckIfItemsIn
 		priceID, err := c.stripeAPI.GetPriceByProductID(ctx, item.ID)
 		if err != nil {
 			logrus.Warnf("failed to get price by product id: %v", err)
-			continue
 			return nil, err
 		}
 		items = append(items, &orderpb.Item{
