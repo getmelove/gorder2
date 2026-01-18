@@ -8,6 +8,8 @@ import (
 	"github.com/getmelove/gorder2/internal/stock/app/query"
 	"github.com/getmelove/gorder2/internal/stock/convertor"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type GRPCServer struct {
@@ -35,7 +37,7 @@ func (G GRPCServer) CheckIfItemsInStock(ctx context.Context, request *stockpb.Ch
 	})
 	if err != nil {
 		logrus.Warnf("CheckIfItemsInStock: %v", err)
-		return nil, err
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &stockpb.CheckIfItemsInStockResponse{
 		InStock: 1,

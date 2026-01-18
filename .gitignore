@@ -36,3 +36,7 @@ vendor/
 
 # Data files
 mysql_data/
+
+# Redis data
+data/redis_data/
+*.rdb

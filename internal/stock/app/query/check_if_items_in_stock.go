@@ -2,16 +2,23 @@ package query
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/getmelove/gorder2/internal/common/decorator"
+	"github.com/getmelove/gorder2/internal/common/handler/redis"
 	"github.com/getmelove/gorder2/internal/stock/domain/stock"
 	"github.com/getmelove/gorder2/internal/stock/entity"
 	"github.com/getmelove/gorder2/internal/stock/infrastructure/integration"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-// 1.定义一个查询
+const (
+	redisLockPrefix = "check_stock"
+)
 
+// 1.定义一个查询
 type CheckIfItemsInStock struct {
 	ItemsWithQuantity []*entity.ItemWithQuantity
 }
@@ -49,10 +56,17 @@ func NewCheckIfItemsInStockHandler(stockRepo stock.Repository, logger *logrus.En
 //}
 
 func (c checkIfItemsInStockHandler) Handle(ctx context.Context, q CheckIfItemsInStock) ([]*entity.Item, error) {
-	if err := c.checkStock(ctx, q.ItemsWithQuantity); err != nil {
-		return nil, err
+	// 开启事务
+	// 1.上redis锁
+	if err := lock(ctx, getLockKey(q)); err != nil {
+		return nil, errors.Wrapf(err, "redis lock error: key=%s", getLockKey(q))
 	}
-
+	defer func() {
+		if err := unlock(ctx, getLockKey(q)); err != nil {
+			logrus.Warnf("redis unlock fail, err=%v", err)
+		}
+	}()
+	//
 	var items []*entity.Item
 	for _, item := range q.ItemsWithQuantity {
 		// TODO: 改为从数据库 or stripe获取
@@ -68,7 +82,27 @@ func (c checkIfItemsInStockHandler) Handle(ctx context.Context, q CheckIfItemsIn
 			PriceID:  priceID,
 		})
 	}
+	// 扣减库存
+	if err := c.checkStock(ctx, q.ItemsWithQuantity); err != nil {
+		return nil, err
+	}
 	return items, nil
+}
+
+func getLockKey(query CheckIfItemsInStock) string {
+	var ids []string
+	for _, i := range query.ItemsWithQuantity {
+		ids = append(ids, i.ID)
+	}
+	return redisLockPrefix + strings.Join(ids, "_")
+}
+
+func lock(ctx context.Context, key string) error {
+	return redis.SetNX(ctx, redis.LocalClient(), key, "1", 5*time.Minute)
+}
+
+func unlock(ctx context.Context, key string) error {
+	return redis.Del(ctx, redis.LocalClient(), key)
 }
 
 func (c checkIfItemsInStockHandler) checkStock(ctx context.Context, query []*entity.ItemWithQuantity) error {
@@ -103,7 +137,32 @@ func (c checkIfItemsInStockHandler) checkStock(ctx context.Context, query []*ent
 		}
 	}
 	if ok {
-		return nil
+		return c.stockRepo.UpdateStock(ctx, query, func(
+			ctx context.Context,
+			existing []*entity.ItemWithQuantity,
+			query []*entity.ItemWithQuantity,
+		) ([]*entity.ItemWithQuantity, error) {
+			var newItems []*entity.ItemWithQuantity
+			for _, e := range existing {
+				for _, q := range query {
+					if e.ID == q.ID {
+						newItems = append(newItems, &entity.ItemWithQuantity{
+							ID:       e.ID,
+							Quantity: e.Quantity - q.Quantity,
+						})
+					}
+				}
+			}
+			return newItems, nil
+		})
 	}
 	return stock.ExceedStockError{FailedOn: failedOn}
 }
+
+// func getStubPriceID(id string) string {
+// 	priceID, ok := stub[id]
+// 	if !ok {
+// 		priceID = stub["1"]
+// 	}
+// 	return priceID
+// }

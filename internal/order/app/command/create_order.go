@@ -15,6 +15,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
+	"google.golang.org/grpc/status"
 )
 
 // 1.定义一个cmd，也就是C。
@@ -95,7 +96,6 @@ func (c createOrderHandler) Handle(ctx context.Context, cmd CreateOrder) (*Creat
 		Headers:      header,
 	})
 	if err != nil {
-		logrus.Error("publish Order to queue error", err)
 		return nil, err
 	}
 	return &CreateOrderResult{
@@ -111,7 +111,7 @@ func (c createOrderHandler) validata(ctx context.Context, items []entity.ItemWit
 	items = packItems(items)
 	resp, err := c.stockGRPC.CheckIfItemsInStock(ctx, convertor.NewItemWithQuantityConvertor().EntityToProtos(items))
 	if err != nil {
-		return nil, err
+		return nil, status.Convert(err).Err()
 	}
 	return convertor.NewItemConvertor().ProtoToEntitys(resp.GetItems()), nil
 }
