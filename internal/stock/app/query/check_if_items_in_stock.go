@@ -68,13 +68,31 @@ func (c checkIfItemsInStockHandler) Handle(ctx context.Context, q CheckIfItemsIn
 	}()
 	//
 	var items []*entity.Item
+	// 2. 使用新封装的 CacheClient 进行价格缓存
+	cacheCli := redis.DefaultCacheClient()
+
 	for _, item := range q.ItemsWithQuantity {
-		// TODO: 改为从数据库 or stripe获取
-		priceID, err := c.stripeAPI.GetPriceByProductID(ctx, item.ID)
+		// 缓存 Key: price_id:{product_id}
+		cacheKey := "price_id:" + item.ID
+		// TTL: 24小时 (因为价格不常变动)
+		ttl := 24 * time.Hour
+
+		// 使用 GetOrSet 获取价格 ID
+		// 如果缓存命中，直接返回；如果未命中，执行闭包里的逻辑去 Stripe 查询
+		priceID, err := cacheCli.GetOrSet(ctx, cacheKey, ttl, func(ctx context.Context) (string, error) {
+			pid, err := c.stripeAPI.GetPriceByProductID(ctx, item.ID)
+			if err != nil {
+				return "", err
+			}
+			return pid, nil
+		})
+
 		if err != nil {
-			logrus.Warnf("failed to get price by product id: %v", err)
+			// 如果查询失败，记录日志并返回错误
+			logrus.Warnf("failed to get price for product %s: %v", item.ID, err)
 			return nil, err
 		}
+
 		items = append(items, &entity.Item{
 			ID:       item.ID,
 			Name:     "",
